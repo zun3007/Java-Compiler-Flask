@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Java Compiler - Modern Online IDE</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <!-- External CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/lint/lint.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/matchesonscrollbar.min.css"
+      rel="stylesheet"
+    />
+    <!-- Custom CSS -->
+    <link href="/static/styles.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container-fluid">
+      <header>
+        <h1 class="main-title">
+          Java Compiler <span class="text-gradient">Online IDE</span>
+        </h1>
+      </header>
+
+      <main class="row g-4">
+        <!-- File Explorer -->
+        <aside class="col-md-3">
+          <div class="file-explorer">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">Project Files</h5>
+              <button
+                class="btn btn-sm btn-primary"
+                onclick="createNewFile()"
+                data-tooltip="Create new file"
+                aria-label="Create new file"
+              >
+                <i class="fas fa-plus" aria-hidden="true"></i>
+                <span class="ms-1">New File</span>
+              </button>
+            </div>
+            <div id="file-list" class="file-list"></div>
+          </div>
+        </aside>
+
+        <!-- Editor Area -->
+        <section class="col-md-9">
+          <div class="card">
+            <div class="card-body p-0">
+              <!-- Tab Bar -->
+              <nav class="tab-bar" id="tab-bar" role="tablist"></nav>
+
+              <!-- Main Editor Area -->
+              <div class="editor-container p-3">
+                <!-- File Upload Section -->
+                <div class="upload-section mb-3">
+                  <label
+                    for="file-upload"
+                    class="file-upload"
+                    id="upload-label"
+                    role="button"
+                  >
+                    <input
+                      type="file"
+                      id="file-upload"
+                      accept=".java,.txt,.in,.out"
+                      aria-label="Upload file"
+                      class="visually-hidden"
+                    />
+                    <i
+                      class="fas fa-cloud-upload-alt fa-2x mb-2"
+                      aria-hidden="true"
+                    ></i>
+                    <p class="upload-text mb-0" id="upload-text">
+                      Drop your file here or click to upload
+                    </p>
+                  </label>
+                </div>
+
+                <!-- Code Editor Section -->
+                <div class="editor-section">
+                  <label for="code-editor" class="form-label"
+                    >Code Editor</label
+                  >
+                  <textarea
+                    id="code-editor"
+                    class="form-control"
+                    aria-label="Code editor"
+                  >
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}</textarea
+                  >
+                </div>
+
+                <!-- Program Input Section -->
+                <div class="input-section mt-3">
+                  <label for="program-input" class="form-label"
+                    >Program Input</label
+                  >
+                  <textarea
+                    id="program-input"
+                    class="form-control"
+                    rows="3"
+                    aria-label="Program input"
+                    placeholder="Enter input values here (one per line)"
+                  ></textarea>
+                </div>
+
+                <!-- Run Button -->
+                <div class="d-grid gap-2 my-3">
+                  <button id="run-btn" class="btn btn-primary">
+                    <i class="fas fa-play me-2" aria-hidden="true"></i>
+                    <span id="run-btn-text">Run Code</span>
+                    <span
+                      id="run-btn-spinner"
+                      class="spinner-border spinner-border-sm d-none"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  </button>
+                </div>
+
+                <!-- Toolbar -->
+                <div class="toolbar" role="toolbar" aria-label="Editor tools">
+                  <button
+                    onclick="formatCode()"
+                    data-tooltip="Format code (Ctrl+Alt+F)"
+                    aria-label="Format code"
+                    class="toolbar-btn"
+                  >
+                    <i class="fas fa-magic" aria-hidden="true"></i>
+                    <span class="tooltip">Format</span>
+                  </button>
+                  <button
+                    onclick="toggleFold()"
+                    data-tooltip="Toggle fold (Ctrl+Q)"
+                    aria-label="Toggle code folding"
+                    class="toolbar-btn"
+                  >
+                    <i class="fas fa-folder" aria-hidden="true"></i>
+                    <span class="tooltip">Fold</span>
+                  </button>
+                  <button
+                    onclick="findReplace()"
+                    data-tooltip="Find/Replace (Ctrl+F)"
+                    aria-label="Find and replace"
+                    class="toolbar-btn"
+                  >
+                    <i class="fas fa-search" aria-hidden="true"></i>
+                    <span class="tooltip">Find</span>
+                  </button>
+                  <button
+                    onclick="jumpToLine()"
+                    data-tooltip="Go to line (Alt+G)"
+                    aria-label="Jump to line"
+                    class="toolbar-btn"
+                  >
+                    <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    <span class="tooltip">Go to</span>
+                  </button>
+                </div>
+
+                <!-- Output Section -->
+                <section class="output-section mt-4">
+                  <h5 class="section-title">Output</h5>
+                  <div
+                    id="output"
+                    class="output-area"
+                    role="log"
+                    aria-live="polite"
+                  >
+                    // Output will appear here...
+                  </div>
+
+                  <!-- File Outputs -->
+                  <div id="file-outputs" class="mt-3">
+                    <h5 class="section-title">Generated Files</h5>
+                    <div
+                      id="file-output-list"
+                      class="output-area"
+                      role="log"
+                      aria-live="polite"
+                    >
+                      // Generated files will appear here...
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Status Bar -->
+      <footer class="status-bar">
+        <div id="cursor-position">Ln 1, Col 1</div>
+        <div id="file-info">Java</div>
+      </footer>
+    </div>
+
+    <!-- External JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/hint/anyword-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/jump-to-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/scroll/annotatescrollbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/matchesonscrollbar.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.4/standalone.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prettier/2.8.4/parser-java.js"></script>
+    <!-- Custom JavaScript -->
+    <script src="/static/script.js"></script>
+  </body>
+</html>
