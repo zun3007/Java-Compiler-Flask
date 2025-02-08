@@ -13,7 +13,7 @@ This project provides a web API for compiling and running Java code, along with 
 1. Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/zun3007/Java-Compiler-Flask
 cd java-compiler-api
 ```
 
