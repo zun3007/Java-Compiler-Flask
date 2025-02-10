@@ -2,6 +2,10 @@
   --primary-color: #0d6efd;
   --secondary-color: #6c757d;
   --code-bg: #f8f9fa;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --metrics-gradient: linear-gradient(45deg, #0d6efd, #00c6ff);
 }
 
 body {
@@ -95,4 +99,102 @@ code {
 
 .table th {
   background-color: #f8f9fa;
+}
+
+/* Metrics Styles */
+.metrics-section {
+  background-color: var(--code-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.metric-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-label {
+  color: var(--secondary-color);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.metric-value {
+  background: var(--metrics-gradient);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9rem;
+}
+
+/* Performance Box */
+.performance-box {
+  background-color: rgba(13, 110, 253, 0.05);
+  border-left: 4px solid var(--primary-color);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.performance-box h5 {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.performance-box ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.performance-box li {
+  margin-bottom: 0.5rem;
+  color: var(--secondary-color);
+}
+
+/* Enhanced Card Styles */
+.card {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+  color: var(--primary-color);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.list-unstyled li {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.list-unstyled li::before {
+  content: '✓';
+  color: var(--success-color);
+  font-weight: bold;
 }

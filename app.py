@@ -2,11 +2,13 @@ import os
 import subprocess
 import uuid
 import shutil
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import tempfile
 import json
+import concurrent.futures
 
 app = Flask(__name__)
 CORS(app)
@@ -22,6 +24,9 @@ EXECUTION_TIMEOUT = 5  # seconds
 # Create necessary folders
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(WORKSPACE_FOLDER, exist_ok=True)
+
+# Optimization: Create a thread pool executor for parallel compilation
+executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -41,10 +46,30 @@ def get_workspace_files():
             })
     return files
 
+def compile_java_file(java_file_path):
+    """Compile a single Java file and return compilation time"""
+    compile_start = time.perf_counter()
+    result = subprocess.run(
+        ['javac', java_file_path],
+        capture_output=True,
+        text=True,
+        timeout=COMPILATION_TIMEOUT
+    )
+    compile_time = time.perf_counter() - compile_start
+    return result, compile_time
+
 def compile_and_run_java(code, files=None, stdin_data=None):
     # Create a unique temporary directory
     temp_dir = os.path.join(UPLOAD_FOLDER, str(uuid.uuid4()))
     os.makedirs(temp_dir, exist_ok=True)
+    
+    metrics = {
+        'compilation_time': 0,
+        'execution_time': 0,
+        'total_time': 0
+    }
+    
+    total_start = time.perf_counter()
     
     try:
         # Write the main code file
@@ -53,28 +78,37 @@ def compile_and_run_java(code, files=None, stdin_data=None):
             f.write(code)
         
         # Write additional files if provided
+        java_files_to_compile = [java_file_path]
         if files:
             for file_info in files:
                 file_path = os.path.join(temp_dir, file_info['name'])
                 with open(file_path, 'w') as f:
                     f.write(file_info['content'])
+                if file_info['name'].endswith('.java'):
+                    java_files_to_compile.append(file_path)
         
-        # Compile the Java file
-        compile_process = subprocess.run(
-            ['javac', java_file_path],
-            capture_output=True,
-            text=True,
-            timeout=COMPILATION_TIMEOUT
-        )
+        # Parallel compilation of Java files
+        compilation_start = time.perf_counter()
+        compilation_futures = [
+            executor.submit(compile_java_file, file_path)
+            for file_path in java_files_to_compile
+        ]
         
-        if compile_process.returncode != 0:
-            return {
-                'success': False,
-                'error': f"Compilation error: {compile_process.stderr}",
-                'output': None
-            }
+        # Wait for all compilations to complete
+        for future in concurrent.futures.as_completed(compilation_futures):
+            result, compile_time = future.result()
+            if result.returncode != 0:
+                return {
+                    'success': False,
+                    'error': f"Compilation error: {result.stderr}",
+                    'output': None,
+                    'metrics': metrics
+                }
+        
+        metrics['compilation_time'] = time.perf_counter() - compilation_start
         
         # Run the compiled Java program with input if provided
+        execution_start = time.perf_counter()
         run_process = subprocess.run(
             ['java', '-cp', temp_dir, 'Main'],
             input=stdin_data,
@@ -83,11 +117,14 @@ def compile_and_run_java(code, files=None, stdin_data=None):
             timeout=EXECUTION_TIMEOUT
         )
         
+        metrics['execution_time'] = time.perf_counter() - execution_start
+        
         if run_process.returncode != 0:
             return {
                 'success': False,
                 'error': f"Runtime error: {run_process.stderr}",
-                'output': None
+                'output': None,
+                'metrics': metrics
             }
         
         # Check for any output files created by the program
@@ -98,24 +135,31 @@ def compile_and_run_java(code, files=None, stdin_data=None):
                 with open(file_path, 'r') as f:
                     output_files[filename] = f.read()
         
+        metrics['total_time'] = time.perf_counter() - total_start
+        
         return {
             'success': True,
             'output': run_process.stdout,
             'error': None,
-            'files': output_files
+            'files': output_files,
+            'metrics': metrics
         }
     
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as e:
+        metrics['total_time'] = time.perf_counter() - total_start
         return {
             'success': False,
             'error': 'Execution timed out',
-            'output': None
+            'output': None,
+            'metrics': metrics
         }
     except Exception as e:
+        metrics['total_time'] = time.perf_counter() - total_start
         return {
             'success': False,
             'error': str(e),
-            'output': None
+            'output': None,
+            'metrics': metrics
         }
     finally:
         # Clean up temporary directory
@@ -127,7 +171,8 @@ def compile_code():
         return jsonify({
             'success': False,
             'error': 'Content-Type must be application/json',
-            'output': None
+            'output': None,
+            'metrics': {'total_time': 0}
         }), 400
     
     data = request.get_json()
@@ -136,7 +181,8 @@ def compile_code():
         return jsonify({
             'success': False,
             'error': 'No code provided',
-            'output': None
+            'output': None,
+            'metrics': {'total_time': 0}
         }), 400
     
     code = data['code']
@@ -148,7 +194,8 @@ def compile_code():
         return jsonify({
             'success': False,
             'error': f'Code must be between 1 and {MAX_CONTENT_LENGTH} bytes',
-            'output': None
+            'output': None,
+            'metrics': {'total_time': 0}
         }), 400
     
     result = compile_and_run_java(code, files, stdin_data)
@@ -193,10 +240,6 @@ def delete_file(filename):
         os.remove(file_path)
         return jsonify({'success': True})
     return jsonify({'error': 'File not found'}), 404
-
-@app.route('/')
-def index():
-    return app.send_static_file('index.html')
 
 if __name__ == '__main__':
     app.run(debug=True) 

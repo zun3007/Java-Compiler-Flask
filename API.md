@@ -2,7 +2,7 @@
 
 ## Overview
 
-This API provides endpoints for compiling and running Java code, along with file management capabilities. It's designed to support a web-based Java IDE environment.
+This API provides endpoints for compiling and running Java code, along with file management capabilities. It's designed to support a web-based Java IDE environment with runtime performance metrics.
 
 ## Base URL
 
@@ -22,7 +22,7 @@ No explicit rate limiting is implemented.
 
 ### 1. Compile and Run Java Code
 
-Compiles and executes Java code with support for multiple files and input data.
+Compiles and executes Java code with support for multiple files and input data. Includes detailed runtime metrics.
 
 **Endpoint:** `POST /api/compile`
 
@@ -51,6 +51,11 @@ Compiles and executes Java code with support for multiple files and input data.
   "error": "string",     // Error message (if unsuccessful)
   "files": {            // Generated output files (if any)
     "filename": "content"
+  },
+  "metrics": {          // Runtime performance metrics
+    "compilation_time": number,  // Time taken for compilation (seconds)
+    "execution_time": number,    // Time taken for execution (seconds)
+    "total_time": number        // Total processing time (seconds)
   }
 }
 ```
@@ -74,6 +79,13 @@ fetch('/api/compile', {
   }),
 });
 ```
+
+**Performance Optimizations:**
+
+- Parallel compilation for multiple Java files
+- Thread pool executor with 4 workers
+- Efficient file handling
+- Detailed runtime metrics tracking
 
 **Possible Errors:**
 
@@ -188,18 +200,32 @@ Deletes a file from the workspace.
 
 ## Technical Specifications
 
+### Performance Constraints
+
+- Parallel compilation with 4 worker threads
+- Compilation timeout: 10 seconds
+- Execution timeout: 5 seconds
+- Runtime metrics precision: 3 decimal places
+
+### Runtime Metrics
+
+The API provides detailed runtime metrics for each compilation and execution:
+
+- `compilation_time`: Time taken to compile all Java files
+- `execution_time`: Time taken to run the compiled program
+- `total_time`: Total processing time including I/O operations
+
 ### File Constraints
 
 - Maximum file size: 512MB
 - Allowed file extensions: `.java`, `.txt`, `.in`, `.out`
-- Compilation timeout: 10 seconds
-- Execution timeout: 5 seconds
 
 ### Security
 
 - All filenames are sanitized
 - Code execution is sandboxed
-- CORS is enabled for all origins
+- CORS is enabled
+- Thread pool isolation
 
 ## Error Responses
 

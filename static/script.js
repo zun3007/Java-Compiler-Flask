@@ -352,6 +352,7 @@ async function runCode() {
   const outputDiv = document.getElementById('output');
   const fileOutputList = document.getElementById('file-output-list');
   const programInput = document.getElementById('program-input');
+  const metricsDiv = document.getElementById('runtime-metrics');
 
   runBtn.disabled = true;
   runBtnText.textContent = 'Running...';
@@ -364,6 +365,7 @@ async function runCode() {
       content,
     }));
 
+    const startTime = performance.now();
     const response = await fetch('/api/compile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -375,11 +377,46 @@ async function runCode() {
     });
 
     const result = await response.json();
+    const totalTime = performance.now() - startTime;
+
+    // Display runtime metrics
+    const metrics = result.metrics || {
+      compilation_time: 0,
+      execution_time: 0,
+      total_time: totalTime / 1000,
+    };
+
+    const metricsHtml = `
+      <div class="metrics-container">
+        <h6 class="metrics-title">Runtime Metrics</h6>
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <span class="metric-label">Compilation Time:</span>
+            <span class="metric-value">${metrics.compilation_time.toFixed(
+              3
+            )}s</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Execution Time:</span>
+            <span class="metric-value">${metrics.execution_time.toFixed(
+              3
+            )}s</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-label">Total Time:</span>
+            <span class="metric-value">${metrics.total_time.toFixed(3)}s</span>
+          </div>
+        </div>
+      </div>
+    `;
 
     if (result.success) {
-      outputDiv.innerHTML = `<pre class="success">${
-        result.output || 'Program executed successfully with no output.'
-      }</pre>`;
+      outputDiv.innerHTML = `
+        <pre class="success">${
+          result.output || 'Program executed successfully with no output.'
+        }</pre>
+        ${metricsHtml}
+      `;
 
       if (result.files && Object.keys(result.files).length > 0) {
         let filesHtml = '<div class="mt-3">';
@@ -398,7 +435,10 @@ async function runCode() {
         fileOutputList.innerHTML = 'No output files generated.';
       }
     } else {
-      outputDiv.innerHTML = `<pre class="error">Error: ${result.error}</pre>`;
+      outputDiv.innerHTML = `
+        <pre class="error">Error: ${result.error}</pre>
+        ${metricsHtml}
+      `;
       fileOutputList.innerHTML = 'No output files generated.';
     }
   } catch (error) {
